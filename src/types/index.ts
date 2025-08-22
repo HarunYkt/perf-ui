@@ -5,9 +5,6 @@ export interface User {
   email: string;
   fullName?: string;
   role: UserRole;
-  managerId?: number;
-  createdAt?: string;
-  updatedAt?: string;
 }
 
 export type EvaluationType = "SELF" | "PEER" | "MANAGER";
@@ -23,27 +20,4 @@ export interface Evaluation {
   periodYear: number;
   periodQuarter: Quarter;
   createdAt?: string;
-  updatedAt?: string;
-}
-
-// API Response types
-export interface ApiResponse<T> {
-  data: T;
-  message?: string;
-  success: boolean;
-}
-
-export interface PaginatedResponse<T> {
-  data: T[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
-
-// Error types
-export interface ApiError {
-  message: string;
-  code?: string;
-  details?: Record<string, unknown>;
 }

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import api from "@/lib/api";
-import { getUser, getToken } from "@/lib/auth";
+import { getUser } from "@/lib/auth";
 
 function useQuery() {
   const { search } = useLocation();
@@ -13,7 +13,7 @@ export default function Evaluate() {
   const me = getUser();
   const q = useQuery();
   const mode = q.get("mode");
-  const isSelf = mode === "self";
+  const isSelf = mode === "self" || (me?.role === "EMPLOYEE" && mode == null);
 
   const [employeeEmail, setEmployeeEmail] = useState(isSelf ? (me?.email ?? "") : "");
   const [periodStart, setPeriodStart] = useState("");
@@ -25,27 +25,11 @@ export default function Evaluate() {
 
   useEffect(() => {
     if (isSelf) setEmployeeEmail(me?.email ?? "");
-    
-    // Check if user is authenticated
-    const token = getToken();
-    if (!token || !me) {
-      nav("/login");
-      return;
-    }
-  }, [isSelf, me?.email, me, nav]);
+  }, [isSelf, me?.email]);
 
   async function submit(ev: React.FormEvent) {
     ev.preventDefault();
     setErr(""); setSaving(true);
-    
-    // Double check authentication before submitting
-    const token = getToken();
-    if (!token) {
-      setErr("Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.");
-      nav("/login");
-      return;
-    }
-    
     try {
       await api.post("/evaluations", {
         employeeEmail: employeeEmail || null,
@@ -55,13 +39,8 @@ export default function Evaluate() {
         comments: comments || null,
       });
       nav("/evaluations");
-    } catch (error: any) {
-      if (error.response?.status === 401) {
-        setErr("Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.");
-        nav("/login");
-      } else {
-        setErr("Kayıt sırasında hata oluştu: " + (error.response?.data?.message || error.message));
-      }
+    } catch {
+      setErr("Kayıt sırasında hata oluştu.");
     } finally {
       setSaving(false);
     }
@@ -79,12 +58,12 @@ export default function Evaluate() {
             required
             value={employeeEmail}
             onChange={(ev) => setEmployeeEmail(ev.target.value)}
-            className="w-full rounded border border-slate-300 px-3 py-2 text-sm"
+            className={`w-full rounded border px-3 py-2 text-sm ${isSelf ? "bg-slate-100 border-slate-300 text-slate-700" : "border-slate-300"}`}
             type="email"
             placeholder="ornek@firma.com"
-            disabled={false}
+            disabled={isSelf}
           />
-          <div className="text-xs text-slate-500 mt-1">Kendinizi veya başkalarını değerlendirebilirsiniz.</div>
+          {isSelf && <div className="text-xs text-slate-500 mt-1">Kendi değerlendirmeniz için e-posta kilitlidir.</div>}
         </div>
 
         <div className="grid grid-cols-2 gap-3">
